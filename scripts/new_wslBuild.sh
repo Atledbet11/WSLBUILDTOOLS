@@ -18,22 +18,34 @@ while [[ "${#}" -gt 0 ]]; do
 
 		# nobackup
 		--nobackup)
+			NOBACKUP=1
+			shift # Past argument
 			;;
 
 		# noopt
 		--noopt)
+			NOOPT=1
+			shift # Past argument
 			;;
 
 		# noinit
 		--noinit)
+			NOINIT=1
+			shift # Past argument
 			;;
 
 		# unit testing
 		--unittest)
+			UNITTEST=1
+			shift # Past argument
 			;;
 
 		# debug enable
 		-d|--debug)
+			DEBUG=1
+			shift # Past argument
 			;;
 
 done
+
+
