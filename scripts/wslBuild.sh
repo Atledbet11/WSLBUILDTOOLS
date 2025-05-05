@@ -20,6 +20,9 @@ fi
 
 echo "Build Script Begin"
 
+# Source fileTools.sh
+source fileTools.sh
+
 # Adding proper argument handling into the script for those who dare to improve upon this script
 
 POSITIONAL_ARGS=()
@@ -183,14 +186,14 @@ function backup() {
 
 # Initialization
 # Check to make sure fileName exists - create it if its not found.
-#  If the file was not found open it in fileManager - basic text editor.
+#  If the file was not found open it in fileTools - basic text editor.
 function init() {
 
 	# If the file does not exist.
 	if ! [ -f "$fileName" ]; then
 
 		# Create it with fileManager.sh.
-		fileManager.sh "$fileName"
+		fileEditor "$fileName"
 
 	fi
 
