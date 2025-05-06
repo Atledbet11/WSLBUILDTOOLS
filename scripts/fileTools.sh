@@ -656,7 +656,6 @@ function editLine() {
 			# Line Number
 			-n|--number)
 				local EDITLINE="${2}"
-				echo "HMM ${EDITLINE}"
 				shift # Past argument
 				shift # Past value
 				;;
@@ -710,8 +709,10 @@ function editLine() {
 
 	fi
 
-	# Read in the line that th euser wishes to edit
+	# Read in the line that the user wishes to edit
 	local LINEVALUE=$(echo "${EDITARRAY[${EDITLINE}]}" | tr -d '\r')
+
+	echo "LINEVALUE: ${LINEVALUE}"
 
 	# Check if we are editing inline or not
 	if [[ "${INLINE}" == 1 ]]; then
@@ -722,7 +723,7 @@ function editLine() {
 	else
 
 		# Read in the user's edits without inline allowed
-		read -re "${LINEVALUE}" LINEVALUE
+		read -re LINEVALUE
 
 	fi
 

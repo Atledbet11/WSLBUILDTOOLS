@@ -1,253 +1,292 @@
 #!/bin/bash
 
-# Validate that we are on the sled11 buildbox.
-source buildBoxValidation.sh
-ret=$?
 
-# Check the return value from the validation script
-if [ $ret = 0 ]; then
+# I am re-writing this script to address issues with "local -n" in older bash releases
+#  -n is not recognized as a valid option for local variable declarations
+#  And thus fileTools.sh and userInterface.sh will not work on sled11 buildbox
+#  These commands will have to be executed in another distro to work properly.
 
-	# Confirmation that we are running on the buildbox and not another distro.
-        echo "Running from buildbox."
-
-else
-
-	# Tell the user that the environment is wrong, and exit with an error.
-        echo "Wrong build environment!"
-	exit 1
-
-fi
-
-echo "Build Script Begin"
-
-# Source fileTools.sh
 source fileTools.sh
 
-# Adding proper argument handling into the script for those who dare to improve upon this script
+# At build time, this script will execute another script "sled11Build.sh" that will
+#  Handle building the code itself from the sled11 environment
 
-POSITIONAL_ARGS=()
+# Argument handling
 
-while [[ $# -gt 0 ]]; do
+while [[ "${#}" -gt 0 ]]; do
 
-	case $1 in 
+	case "${1}" in
 
-		# Backup flag
-		-b|--backup)
-			BACKUP=1
-			shift
+		# nobackup
+		--nobackup)
+			NOBACKUP=1
+			shift # Past argument
 			;;
 
-		# Skip Initialization For building From VSCODE
-		-n|--noinit)
+		# noopt
+		--noopt)
+			NOOPT=1
+			shift # Past argument
+			;;
+
+		# noinit
+		--noinit)
 			NOINIT=1
-			shift
+			shift # Past argument
 			;;
 
-		# Error catching
-		-*|--*)
-			echo "Unknown option $1"
-			exit 1
+		# nodiff
+		--nodiff)
+			NODIFF=1
+			shift # Past argument
 			;;
 
-		# Saves the positional argument
-		*)
-			POSITIONAL_ARGS+=("$1")
-			shift
+		# unit testing
+		--unittest)
+			UNITTEST=1
+			shift # Past argument
+			;;
+
+		# debug enable
+		-d|--debug)
+			DEBUG=1
+			shift # Past argument
 			;;
 
 	esac
 
 done
 
-# Restore positional parameters
-set -- "${POSITIONAL_ARGS[@]}"
+function debug() {
 
-# Logging
-echo "Backup = ${BACKUP}"
-echo "NoInit = ${NOINIT}"
+	if [[ -n "${DEBUG}" ]]; then
 
-# The file containing buildtime commands
-fileName="../wslBuildCommands.txt"
+		echo -e "wslBuild.sh: DEBUG: ${1}"
 
-# Declares an array to store the file contents into
-declare -a FileData
-
-# Reads the file at $fileName and stores the data into FileData
-function readFile() {
-
-	# While loop to iterate over each line in $fileName
-	while IFS= read -r line
-	do
-
-		# Check to make sure the line has a valid length to simplify code below
-		if [[ -z $line ]]; then
-
-			# Display that an empty line was read
-			echo "Ignoring empty line"
-
-			# Continue and ignore this line item
-			continue
-
-		fi
-
-		# Check to make sure this isn't commented out
-		if ! [[ ${line:0:1} == "#" ]]; then
-
-			# Add this line to the FileData Array.
-			FileData+=( "$line" )
-
-		fi
-
-	done < "$fileName"
+	fi
 
 }
 
-# Backup
-# Saves a copy of NewServer3.tgz or NewCCL.tgz and its associated wslBuildCommands.dat and wslBuild.dat information.
+if [[ -n "${DEBUG}" ]]; then
+
+	# Debug logging
+	if [[ -n "${NOBACKUP}" ]]; then echo "NOBACKUP = ${NOBACKUP}"; fi
+	if [[ -n "${NOOPT}" ]]; then    echo "NOOPT    = ${NOOPT}"; fi
+	if [[ -n "${NOINIT}" ]]; then   echo "NOINIT   = ${NOINIT}"; fi
+	if [[ -n "${NODIFF}" ]]; then   echo "NODIFF   = ${NODIFF}"; fi
+	if [[ -n "${UNITTEST}" ]]; then echo "UNITTEST = ${UNITTEST}"; fi
+
+fi
+
+# Before we do anything, we need to make sure we are in a server or ccl directory
+CURDIR=${PWD##*/}
+CURDIR=${CURDIR:-/}
+
+# If the current directory is not server or ccl
+if ! [[ "${CURDIR}" == "server" || "${CURDIR}" == "ccl" ]]; then
+
+	# The directory was not server or ccl
+	echo "Current Directory: ${CURDIR} was invalid."
+	exit 255
+
+fi
+
+# Variables
+BUILDFILE="../wslBuild.dat"
+COMMANDFILE="../wslBuildCommands.dat"
+DIFFFILE="../wslDiff.dat"
+DIFFFILES=()
+
+# I am changing the backup routine.
+# The new backup routine will save off a backup upon a successful build
+# To figure out if we have a successful build, we will grep the file
+# ../wslBuild.dat for the md5 sum.
+
+# IF the md5 sum is there, then we know we made it though the build process
 function backup() {
 
-	# Making Backup
-	echo "Making Backup"
+	debug "Making Backup"
 
-	# Current date and time.
-	dateTime=$(date '+%Y-%m-%d_%H:%M:%S')
+	# Look for the file "../wslBuild.dat"
+	if [[ -f "${BUILDFILE}" ]]; then
 
-	# Current directory minus the path.
-	curdir=${PWD##*/}
-	curdir=${curdir:-/}
+		# If the file did not contain an md5
+		if [[ -z $(grep "MD5(" "${BUILDFILE}") ]]; then
 
-	echo "$curdir"
-
-	# Where we will save the backup.
-	backdir="${dateTime}"
-
-	# Check to see if ../wslBuild.dat exists.
-	if [ -f "../wslBuild.dat" ]; then
-		md5=$(grep "MD5(" "../wslBuild.dat")
-		md5=${md5: -4}
-
-		# Add the md5 to the backup path name.
-		backdir="${md5}_${dateTime}"
-
-	fi
-
-	# Print the backup directory name.
-	echo "$backdir"
-
-	# Create the directory to save the backups into.
-	mkdir "../${backdir}"
-
-	# If we are in a server directory.
-	if [ $curdir == "server" ]; then
-
-		# Check to see if the file NewServer3.tgz exists.
-		if [ -f "NewServer3.tgz" ]; then
-
-			# Save a copy of the code.
-			scp "NewServer3.tgz" "../${backdir}"
+			echo "wslBuild.sh: Backup failed - No MD5 found!"
+			exit 255
 
 		fi
 
-	fi
+		# We should have a valid MD5 to use
+		local MD5=$(grep "MD5(" "${BUILDFILE}")
+		MD5=${MD5: -4}
 
-	# If we are in a ccl directory.
-	if [ $curdir == "ccl" ]; then
+		# Get the current date and time.
+		local DATETIME=$(date '+%Y-%m-%d_%H-%M')
 
-		# Check to see if the file NewCCL.tgz exists.
-		if [ -f "NewCCL.tgz" ]; then
+		# Build the directory name for this backup
+		local BACKDIR="../backups/${MD5}_${DATETIME}/"
 
-			# Save a copy of the code.
-			scp "NewCCL.tgz" "../${backdir}"
+		# Make the directory for the backup
+		mkdir -p "${BACKDIR}"
+
+		# Code variable
+		local CODE=""
+
+		# If we are in the server directory
+		if [[ "${CURDIR}" == "server" ]]; then
+
+			# Set the code variable to "NewServer3.tgz"
+			CODE="NewServer3.tgz"
+
+		# If we are in the ccl directory
+		elif [[ "${CURDIR}" == "ccl" ]]; then
+
+			# Set the code variable to "NewCCL.tgz"
+			CODE="NewCCL.tgz"
 
 		fi
 
+		# Save a copy of the tgz in the backup dir
+		scp "${CODE}" "${BACKDIR}"
+
+		# If wslBuildCommands.dat exists
+		if [[ -f "${COMMANDFILE}" ]]; then
+
+			# Save a copy of it too
+			scp "${COMMANDFILE}" "${BACKDIR}"
+
+		fi
+
+		# If wslDiff.dat exists
+		if [[ -f "${DIFFFILE}" ]]; then
+
+			# Save a copy of it too
+			scp "${DIFFFILE}" "${BACKDIR}"
+
+		fi
+
+		# Save a copy of wslBuild.dat
+		scp "${BUILDFILE}" "${BACKDIR}"
+
+		debug "Backup made at ${BACKDIR}"
+
+		# If the user has diff enabled
+		if [[ "${NODIFF}" != 1 ]]; then
+
+			# For each file in array DIFFFILES
+			for FILE in "${DIFFFILES[@]}"; do
+
+				debug "Backing up file ${FILE}"
+
+				# Backup the file that had differences
+				scp "${FILE}" "${BACKDIR}"
+
+			done
+
+		fi
+
+	else
+
+		debug "File ../wslBuild.dat did not exist!"
+
 	fi
 
-	# If we have wslBuildCommands.txt.
-	if [ -f "../wslBuildCommands.txt" ]; then
+}
 
-		# Save a copy of the buildCommands.
-		scp "../wslBuildCommands.txt" "../${backdir}"
+# Differences
+# This will run a cvs diff and populate DIFFFILES with the files
+#  That were edited.
+function diffRepo() {
+
+	# Tell the user we are doing a CVS diff
+	echo "wslBuild.sh: Doing CVS diff"
+	echo "Please provide CVS Passcode"
+	echo "--nodiff will disable this."
+
+	# Create the wslDiff.dat
+	cvs diff > "${DIFFFILE}"
+
+	# At this point we should have a DIFFFILE
+	# grep for "Index: "
+	#  This will return lines that contain diffed filenames
+	RESULTS=$(grep "^Index: " "${DIFFFILE}")
+
+	# Split the results from grep at '\n' and store results into DIFFFILES
+	IFS=$'\n' read -r -d '' -a DIFFFILES <<< "${RESULTS}" || true
+
+	debug "${DIFFFILES[@]}"
+
+	# For each file that had differences
+	for i in $( seq 0 "${#DIFFFILES[@]}"); do
+
+		# Strip off the "Index: " part from the file
+		DIFFFILES["${i}"]=${DIFFFILES["${i}"]//"Index: "/}
+
+	done
+
+	# Check to see if the last index is a blank line
+	if [[ "${#DIFFFILES[-1]}" == 0 ]]; then
+
+		# Unset the last index from DIFFFILES
+		unset 'DIFFFILES[-1]'
 
 	fi
 
-	# If we have wslBuild.dat.
-	if [ -f "../wslBuild.dat" ]; then
-
-		# Save a copy of the wslBuild data.
-		scp "../wslBuild.dat" "../${backdir}"
-
-	fi
-
-	# Backup Made
-	echo "Backup Made"
+	# Now DIFFFILES will contain all the filenames that had differences
 
 }
 
 # Initialization
-# Check to make sure fileName exists - create it if its not found.
-#  If the file was not found open it in fileTools - basic text editor.
+# this will initialize wslBuildCommands.txt if it did not exist
+# Checks to make sure NOINIT=0
 function init() {
 
-	# If the file does not exist.
-	if ! [ -f "$fileName" ]; then
+	debug "Doing init"
 
-		# Create it with fileManager.sh.
-		fileEditor "$fileName"
+	# If the file does not exist
+	if ! [[ -f "${COMMANDFILE}" ]]; then
+
+		# Create the file, and let the user populate it
+		fileEditor "${COMMANDFILE}" -i
 
 	fi
 
-	# Read the file.
-	readFile
-
 }
 
+# Make sure init is enabled
+if [[ "${NOINIT}" != 1 ]]; then
 
-
-# If -b backup the old code before we continue
-if [[ $BACKUP == 1 ]]; then
-
-	# Call backup function.
-	backup
-
-fi
-
-# If -n skip initialization
-if [[ $NOINIT == 1 ]]; then
-
-	# Skip Initialization
-	echo "Skipping Initialization"
-
-else
-
-	# Initialization
+	# Initialize the COMMANDFILE
 	init
 
 fi
 
-# This will create the make command.
-function buildCommand() {
+# directory we are to return to
+CODEDIR=$(pwd)
 
-	# Get the length of the FileData Array.
-	lengthOfArray=${#FileData[@]}
+# Change to a windows directory
+# This is in order to avoid errors with path parsing
+cd "/mnt/c"
 
-	# Default value for the build command.
-	buildCMD='make clean && make'
+# Now we can call sled11Build.sh in its wsl environment.
+wsl.exe -d sled11 cd ${CODEDIR} \&\& sled11Build.sh
 
-	# For each item in the FileData array.
-	for i in $(seq 0 $(( lengthOfArray - 1)))
-	do
+cd "${CODEDIR}"
 
-		# Add the line contents to the build command.
-		buildCMD="${FileData[i]} && $buildCMD"
+# Perform a DIFF into wslDiff.dat if the user wishes to
+if [[ "${NODIFF}" != 1 ]]; then
 
-	done
+	# Runn the Diff function
+	diffRepo
 
-	# This serves as the return out of the function and is required for this to work.
-	echo "$buildCMD"
+fi
 
-}
+# Now that the command has been run we can try making a backup
+if [[ "${NOBACKUP}" != 1 ]]; then
 
-# Log to the user their build command that was built.
-echo "Build Command: $(buildCommand)"
-eval $(buildCommand) 2>&1 | tee ../wslBuild.dat
+	# Backup the files
+	backup
+
+fi

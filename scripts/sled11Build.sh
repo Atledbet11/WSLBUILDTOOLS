@@ -84,7 +84,7 @@ else
 
 fi
 
-BUILDFILE="../wslBuildCommands.txt"
+BUILDFILE="../wslBuildCommands.dat"
 BUILDCOMMANDS=()
 OUTFILE="../wslBuild.dat"
 
