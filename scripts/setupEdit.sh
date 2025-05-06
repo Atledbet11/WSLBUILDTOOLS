@@ -1,6 +1,7 @@
 #!/bin/bash
 
 source fileTools.sh
+source userInterface.sh
 source userInputValidation.sh
 
 FILENAME="../setup.dat"

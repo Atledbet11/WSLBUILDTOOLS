@@ -3,7 +3,7 @@
 # Only runs if the script is being directly executed.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 
-        echo "Script is being directly executed!"
+	echo "Script is being directly executed!"
 	echo "Source this script using 'source auto.sh'"
 	exit 255
 
@@ -49,16 +49,16 @@ function auto() {
 
 	function exclusivity() {
 
-	        # Check if MUTUALLY_EXCLUSIVE is set
-	        if [[ "${MUTUALLY_EXCLUSIVE}" == 1 ]]; then
+			# Check if MUTUALLY_EXCLUSIVE is set
+			if [[ "${MUTUALLY_EXCLUSIVE}" == 1 ]]; then
 
-	                # return with error
-	                echo "To many parameters!"
-	                return 255
+					# return with error
+					echo "To many parameters!"
+					return 255
 
-	        fi
+			fi
 
-	        MUTUALLY_EXCLUSIVE=1
+			MUTUALLY_EXCLUSIVE=1
 
 	}
 
@@ -209,9 +209,9 @@ function auto() {
 	# Make sure an option for validation was supplied
 	if [[ "${MUTUALLY_EXCLUSIVE}" == 0 ]]; then
 
-	        # Error
-	        echo "You must supply a validation parameter"
-	        return 255
+			# Error
+			echo "You must supply a validation parameter"
+			return 255
 
 	fi
 
@@ -265,16 +265,17 @@ function auto() {
 	# Switch case for each mode
 	case "${MODE}" in
 		c|command)
-			# We will need to parse the command and add in field separators
 
+			# We will need to parse the command and add in field separators
 			CMD="${COMMAND[0]}"
 
+			# For each command in the array starting with index 1
 			for cmd in "${COMMAND[@]:1}"; do
 
+				# Add in the new command with the field separator.
 				CMD="${CMD}${FSEP} ${cmd}"
 
 			done
-
 			;;
 
 		d|default)

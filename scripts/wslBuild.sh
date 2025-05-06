@@ -1,12 +1,9 @@
 #!/bin/bash
 
-
 # I am re-writing this script to address issues with "local -n" in older bash releases
 #  -n is not recognized as a valid option for local variable declarations
 #  And thus fileTools.sh and userInterface.sh will not work on sled11 buildbox
 #  These commands will have to be executed in another distro to work properly.
-
-source fileTools.sh
 
 # At build time, this script will execute another script "sled11Build.sh" that will
 #  Handle building the code itself from the sled11 environment
@@ -20,12 +17,6 @@ while [[ "${#}" -gt 0 ]]; do
 		# nobackup
 		--nobackup)
 			NOBACKUP=1
-			shift # Past argument
-			;;
-
-		# noopt
-		--noopt)
-			NOOPT=1
 			shift # Past argument
 			;;
 
@@ -47,15 +38,55 @@ while [[ "${#}" -gt 0 ]]; do
 			shift # Past argument
 			;;
 
+		# Help
+		-h|--help)
+			HELP=1
+			shift # Past argument
+			;;
+
 		# debug enable
 		-d|--debug)
 			DEBUG=1
 			shift # Past argument
 			;;
 
+		# Auto deploy
+		-a|--autodeploy)
+			AUTODEPLOY=1
+			shift # Past argument
+			;;
+
+		# Error Handling
+		*)
+			echo "wslBuild.sh: Invalid Parameter ${1}!"
+			shift # Past argument
+			exit 255
+			;;
+
 	esac
 
 done
+
+# If the user requested help
+if [[ -n "${HELP}" ]]; then
+
+	# Log the filename
+	echo "Help page for wslBuild.sh"
+
+	# Log the purpose of each argument/parameter
+	echo "PARAMETER    : FUNCTIONALITY"
+	echo "--nobackup   : Disables backup functionality"
+	echo "--noinit     : Will not create ../wslBuildCommands.dat"
+	echo "--nodiff     : Disables diff functionality"
+	echo "--autodeploy : Will deploy and verify this code was loaded"
+	echo "             : Requires SITECON_IP in ../wslBuildCommands.dat"
+	echo "--unittest   : For unittesting only"
+	echo "--debug      : Enables debug printing"
+
+	# Exit without error
+	exit 0
+
+fi
 
 function debug() {
 
@@ -70,11 +101,11 @@ function debug() {
 if [[ -n "${DEBUG}" ]]; then
 
 	# Debug logging
-	if [[ -n "${NOBACKUP}" ]]; then echo "NOBACKUP = ${NOBACKUP}"; fi
-	if [[ -n "${NOOPT}" ]]; then    echo "NOOPT    = ${NOOPT}"; fi
-	if [[ -n "${NOINIT}" ]]; then   echo "NOINIT   = ${NOINIT}"; fi
-	if [[ -n "${NODIFF}" ]]; then   echo "NODIFF   = ${NODIFF}"; fi
-	if [[ -n "${UNITTEST}" ]]; then echo "UNITTEST = ${UNITTEST}"; fi
+	if [[ -n "${NOBACKUP}" ]]; then   echo "NOBACKUP   = ${NOBACKUP}"; fi
+	if [[ -n "${NOINIT}" ]]; then     echo "NOINIT     = ${NOINIT}"; fi
+	if [[ -n "${NODIFF}" ]]; then     echo "NODIFF     = ${NODIFF}"; fi
+	if [[ -n "${UNITTEST}" ]]; then   echo "UNITTEST   = ${UNITTEST}"; fi
+	if [[ -n "${AUTODEPLOY}" ]]; then echo "AUTODEPLOY = ${AUTODEPLOY}"; fi
 
 fi
 
@@ -96,6 +127,7 @@ BUILDFILE="../wslBuild.dat"
 COMMANDFILE="../wslBuildCommands.dat"
 DIFFFILE="../wslDiff.dat"
 DIFFFILES=()
+CHECKSUM=""
 
 # I am changing the backup routine.
 # The new backup routine will save off a backup upon a successful build
@@ -119,7 +151,13 @@ function backup() {
 		fi
 
 		# We should have a valid MD5 to use
-		local MD5=$(grep "MD5(" "${BUILDFILE}")
+		local MD5=$(grep "^MD5(" "${BUILDFILE}")
+		
+		# Split the MD5 line at " " and return the data after the " "
+		# This checksum is used in the auto deploy routine
+		CHECKSUM=$(echo "${MD5}" | cut -d ' ' -f2- )
+		echo "CHECKSUM: ${CHECKSUM}"
+		
 		MD5=${MD5: -4}
 
 		# Get the current date and time.
@@ -248,6 +286,9 @@ function init() {
 	# If the file does not exist
 	if ! [[ -f "${COMMANDFILE}" ]]; then
 
+		# We need to source fileTools.sh
+		source fileTools.sh
+
 		# Create the file, and let the user populate it
 		fileEditor "${COMMANDFILE}" -i
 
@@ -255,8 +296,105 @@ function init() {
 
 }
 
+# Auto Deploy
+# This will run an exit3 and look for the results in the log
+function autoDeploy() {
+
+	# Make sure that we have a SITECON_IP to deploy to.
+	#  First make sure the file ../wslBuildCommands.dat exists
+	if ! [[ -f "${COMMANDFILE}" ]]; then
+
+		# Tell the user the file did not exist
+		echo "wslBuild.sh: The file ${COMMANDFILE} does not exist!"
+
+		# Return with error
+		return 255
+
+	fi
+
+	#  If the file exists, grep it for the SITECON_IP value
+	local RESULT=$(grep "^export SITECON_IP=" "${COMMANDFILE}")
+
+	if [[ -z "${RESULT}" ]]; then
+
+		# Tell the user to provide a SITECON_IP
+		echo "wslBuild.sh: SITECON_IP missing from ${COMMANDFILE}"
+
+		# Return with error
+		return 255
+
+	fi
+
+	# Now we want to split the line at "=" and take the second half.
+	SITECONIP=$(echo "${RESULT}" | cut -d '=' -f2- )
+
+	debug "SITECON IP: ${SITECONIP}"
+
+	# We need to source userInputValidation.sh
+	source userInputValidation.sh
+
+	# Validate that the IP is valid.
+	userInputValidation -u "${SITECONIP}" -ip
+	RET="${?}"
+
+	# RET will be 0 if the IP is valid
+	if [[ "${RET}" != 0 ]]; then
+
+		# Tell the user the IP is invalid
+		echo "IP: ${SITECONIP} was invalid!"
+
+		# Return with error
+		return 255
+
+	fi
+
+	# Initialize exit3 Command
+	local EXIT3COMMAND=()
+
+	# Initialize validation Command
+	local VALIDATIONCOMMAND=()
+
+	# Commands will differ between the SC and CCL
+	if [[ "${CURDIR}" == "server" ]]; then
+
+		# Exit 3 Command
+		EXIT3COMMAND+=( "cd /home/sitecon/sc" ) 
+		EXIT3COMMAND+=( "./supportConsole 127.0.0.1 exit3" )
+
+		# Grep command for the CHECKSUM
+		VALIDATIONCOMMAND+=( "grep -i ${CHECKSUM} /home/sitecon/sc/Syslog.dat" )
+
+	elif [[ "${CURDIR}" == "ccl" ]]; then
+
+		# Exit 3 Command
+		EXIT3COMMAND+=( "cd /home/sitecon/sc" ) 
+		EXIT3COMMAND+=( "./supportConsole 127.0.0.1 -noauth -port 4557 exit3" )
+
+		# Grep command for the CHECKSUM
+		VALIDATIONCOMMAND+=( "grep -i ${CHECKSUM} /home/ccl/ccl/CCLlog.dat" )
+
+	fi
+
+	# We need to source auto.sh
+	source auto.sh
+
+	# Run the exit 3 command using auto
+	auto "${SITECONIP}" -s --cmd EXIT3COMMAND
+
+	# Sleep for 10s to give the code a chance to load
+	sleep 10s
+
+	# Run the validation command using auto
+	auto "${SITECONIP}" -s --cmd VALIDATIONCOMMAND
+
+	# Now we should make sure that the Validation was successful and notify the user.
+
+}
+
 # Make sure init is enabled
 if [[ "${NOINIT}" != 1 ]]; then
+
+	debug "Running init."
 
 	# Initialize the COMMANDFILE
 	init
@@ -278,6 +416,8 @@ cd "${CODEDIR}"
 # Perform a DIFF into wslDiff.dat if the user wishes to
 if [[ "${NODIFF}" != 1 ]]; then
 
+	debug "Running diffRepo."
+
 	# Runn the Diff function
 	diffRepo
 
@@ -286,7 +426,19 @@ fi
 # Now that the command has been run we can try making a backup
 if [[ "${NOBACKUP}" != 1 ]]; then
 
+	debug "Running backup."
+
 	# Backup the files
 	backup
+
+fi
+
+# If autodeploy is enabled
+if [[ -n "${AUTODEPLOY}" ]]; then
+
+	debug "Running autoDeploy."
+
+	# AutoDeploy
+	autoDeploy
 
 fi
