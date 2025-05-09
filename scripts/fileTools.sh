@@ -935,7 +935,7 @@ function fileEditor() {
 			1) # Comment
 
 				# Prompt the user for what line to comment
-				userInterface -a FILEARRAY -n
+				userInterface -a FILEARRAY -n -s "What line index would you like to comment?"
 
 				local LINENUMBER="${?}"
 
@@ -947,7 +947,7 @@ function fileEditor() {
 			2) # Edit
 
 				# Prompt the user for what line to edit
-				userInterface -a FILEARRAY -n
+				userInterface -a FILEARRAY -n -s "What line index would you like to edit?"
 
 				local LINENUMBER="${?}"
 
@@ -967,7 +967,7 @@ function fileEditor() {
 			3) # Delete
 
 				# Prompt the user for what line to delete
-				userInterface -a FILEARRAY -n
+				userInterface -a FILEARRAY -n -s "What line index would you like to delete?"
 
 				local LINENUMBER="${?}"
 

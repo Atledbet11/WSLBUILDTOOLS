@@ -26,6 +26,12 @@ while [[ "${#}" -gt 0 ]]; do
 			shift # Past argument
 			;;
 
+		# noopt
+		--noopt)
+			NOOPT=1
+			shift # Past argument
+			;;
+
 		# nodiff
 		--nodiff)
 			NODIFF=1
@@ -77,6 +83,7 @@ if [[ -n "${HELP}" ]]; then
 	echo "PARAMETER    : FUNCTIONALITY"
 	echo "--nobackup   : Disables backup functionality"
 	echo "--noinit     : Will not create ../wslBuildCommands.dat"
+	echo "--noopt      : Will ignore ../wslBuildCommands.dat on sled11Build.sh"
 	echo "--nodiff     : Disables diff functionality"
 	echo "--autodeploy : Will deploy and verify this code was loaded"
 	echo "             : Requires SITECON_IP in ../wslBuildCommands.dat"
@@ -103,6 +110,7 @@ if [[ -n "${DEBUG}" ]]; then
 	# Debug logging
 	if [[ -n "${NOBACKUP}" ]]; then   echo "NOBACKUP   = ${NOBACKUP}"; fi
 	if [[ -n "${NOINIT}" ]]; then     echo "NOINIT     = ${NOINIT}"; fi
+	if [[ -n "${NOOPT}" ]]; then      echo "NOOPT      = ${NOOPT}"; fi
 	if [[ -n "${NODIFF}" ]]; then     echo "NODIFF     = ${NODIFF}"; fi
 	if [[ -n "${UNITTEST}" ]]; then   echo "UNITTEST   = ${UNITTEST}"; fi
 	if [[ -n "${AUTODEPLOY}" ]]; then echo "AUTODEPLOY = ${AUTODEPLOY}"; fi
@@ -411,7 +419,18 @@ CODEDIR=$(pwd)
 cd "/mnt/c"
 
 # Now we can call sled11Build.sh in its wsl environment.
-wsl.exe -d sled11 cd ${CODEDIR} \&\& sled11Build.sh
+# Handle noopt
+if [[ -n "${NOOPT}" ]]; then
+
+	# Build with noopt enabled
+	wsl.exe -d sled11 cd ${CODEDIR} \&\& sled11Build.sh --noopt
+
+else 
+
+	# Build with ../wslBuildCommands.dat enabled
+	wsl.exe -d sled11 cd ${CODEDIR} \&\& sled11Build.sh
+
+fi
 
 cd "${CODEDIR}"
 

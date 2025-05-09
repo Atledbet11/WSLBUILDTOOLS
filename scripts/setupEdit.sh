@@ -4,14 +4,16 @@ source fileTools.sh
 source userInterface.sh
 source userInputValidation.sh
 
-FILENAME="../setup.dat"
-FILECONTENTS=( "MOO" "SHROOM" )
+FILENAME="../setup_"
+CMD="ls ${FILENAME}*.dat"
 
-#createFile "${FILENAME}" -p 666 -d
+FILES=($(${CMD}))
 
-#readFile -f "${FILENAME}" -a FILECONTENTS
+for FILE in "${FILES[@]}"; do
 
-#echo "${FILECONTENTS[@]}"
+	echo "File found: ${FILE}"
+
+done
 
 
 PROMPT="PROMPT"

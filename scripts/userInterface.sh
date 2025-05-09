@@ -69,6 +69,13 @@ function userInterface {
 				shift # Past value
 				;;
 
+			# Prompt Array Statement
+			-s|--arraystatement)
+				local ARRAYSTATEMENT="${2}"
+				shift # Past argument
+				shift # Past value
+				;;
+
 			# Options
 			-o|--options)
 				local -n UIOPTION="${2}"
@@ -446,7 +453,16 @@ function userInterface {
 
 		else
 
-			printFormat "Enter index"
+			# If an array statement was provided
+			if [[ -z "${ARRAYSTATEMENT}" ]]; then
+
+				# Set the default statement
+				ARRAYSTATEMENT="Enter Index: "
+
+			fi
+
+			# Print the ARRAYSTATEMENT
+			printFormat "${ARRAYSTATEMENT}"
 
 		fi
 
