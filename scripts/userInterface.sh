@@ -195,8 +195,7 @@ function userInterface {
 			# Init the position field
 			POS=0
 
-			while true
-			do
+			while true; do
 
 				# Sanity Check
 				if [[ "${POS}" -ge "${#i}" ]]; then
@@ -534,7 +533,6 @@ function userInterface {
 					fi
 
 				fi
-
 
 			fi
 
