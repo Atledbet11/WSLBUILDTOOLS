@@ -128,6 +128,7 @@ COMMANDFILE="../wslBuildCommands.dat"
 DIFFFILE="../wslDiff.dat"
 DIFFFILES=()
 CHECKSUM=""
+MD5=""
 
 # I am changing the backup routine.
 # The new backup routine will save off a backup upon a successful build
@@ -139,95 +140,68 @@ function backup() {
 
 	debug "Making Backup"
 
-	# Look for the file "../wslBuild.dat"
-	if [[ -f "${BUILDFILE}" ]]; then
+	# Get the current date and time.
+	local DATETIME=$(date '+%Y-%m-%d_%H-%M')
 
-		# If the file did not contain an md5
-		if [[ -z $(grep "MD5(" "${BUILDFILE}") ]]; then
+	# Build the directory name for this backup
+	local BACKDIR="../backups/${MD5}_${DATETIME}/"
 
-			echo "wslBuild.sh: Backup failed - No MD5 found!"
-			exit 255
+	# Make the directory for the backup
+	mkdir -p "${BACKDIR}"
 
-		fi
+	# Code variable
+	local CODE=""
 
-		# We should have a valid MD5 to use
-		local MD5=$(grep "^MD5(" "${BUILDFILE}")
-		
-		# Split the MD5 line at " " and return the data after the " "
-		# This checksum is used in the auto deploy routine
-		CHECKSUM=$(echo "${MD5}" | cut -d ' ' -f2- )
-		echo "CHECKSUM: ${CHECKSUM}"
-		
-		MD5=${MD5: -4}
+	# If we are in the server directory
+	if [[ "${CURDIR}" == "server" ]]; then
 
-		# Get the current date and time.
-		local DATETIME=$(date '+%Y-%m-%d_%H-%M')
+		# Set the code variable to "NewServer3.tgz"
+		CODE="NewServer3.tgz"
 
-		# Build the directory name for this backup
-		local BACKDIR="../backups/${MD5}_${DATETIME}/"
+	# If we are in the ccl directory
+	elif [[ "${CURDIR}" == "ccl" ]]; then
 
-		# Make the directory for the backup
-		mkdir -p "${BACKDIR}"
+		# Set the code variable to "NewCCL.tgz"
+		CODE="NewCCL.tgz"
 
-		# Code variable
-		local CODE=""
+	fi
 
-		# If we are in the server directory
-		if [[ "${CURDIR}" == "server" ]]; then
+	# Save a copy of the tgz in the backup dir
+	scp "${CODE}" "${BACKDIR}"
 
-			# Set the code variable to "NewServer3.tgz"
-			CODE="NewServer3.tgz"
+	# If wslBuildCommands.dat exists
+	if [[ -f "${COMMANDFILE}" ]]; then
 
-		# If we are in the ccl directory
-		elif [[ "${CURDIR}" == "ccl" ]]; then
+		# Save a copy of it too
+		scp "${COMMANDFILE}" "${BACKDIR}"
 
-			# Set the code variable to "NewCCL.tgz"
-			CODE="NewCCL.tgz"
+	fi
 
-		fi
+	# If wslDiff.dat exists
+	if [[ -f "${DIFFFILE}" ]]; then
 
-		# Save a copy of the tgz in the backup dir
-		scp "${CODE}" "${BACKDIR}"
+		# Save a copy of it too
+		scp "${DIFFFILE}" "${BACKDIR}"
 
-		# If wslBuildCommands.dat exists
-		if [[ -f "${COMMANDFILE}" ]]; then
+	fi
 
-			# Save a copy of it too
-			scp "${COMMANDFILE}" "${BACKDIR}"
+	# Save a copy of wslBuild.dat
+	scp "${BUILDFILE}" "${BACKDIR}"
 
-		fi
+	debug "Backup made at ${BACKDIR}"
 
-		# If wslDiff.dat exists
-		if [[ -f "${DIFFFILE}" ]]; then
+	# If the user has diff enabled
+	if [[ "${NODIFF}" != 1 ]]; then
 
-			# Save a copy of it too
-			scp "${DIFFFILE}" "${BACKDIR}"
+		# For each file in array DIFFFILES
+		for FILE in "${DIFFFILES[@]}"; do
 
-		fi
+			debug "Backing up file ${FILE}"
 
-		# Save a copy of wslBuild.dat
-		scp "${BUILDFILE}" "${BACKDIR}"
+			# Backup the file that had differences
+			scp "${FILE}" "${BACKDIR}"
 
-		debug "Backup made at ${BACKDIR}"
-
-		# If the user has diff enabled
-		if [[ "${NODIFF}" != 1 ]]; then
-
-			# For each file in array DIFFFILES
-			for FILE in "${DIFFFILES[@]}"; do
-
-				debug "Backing up file ${FILE}"
-
-				# Backup the file that had differences
-				scp "${FILE}" "${BACKDIR}"
-
-			done
-
-		fi
-
-	else
-
-		debug "File ../wslBuild.dat did not exist!"
+		done
 
 	fi
 
@@ -364,6 +338,12 @@ function autoDeploy() {
 		# Grep command for the CHECKSUM
 		VALIDATIONCOMMAND+=( "grep -i ${CHECKSUM} /home/sitecon/sc/Syslog.dat" )
 
+		# Set validation user incase there are file permission issues
+		VALIDATIONUSER="-s"
+
+		# Set the sleeptime to 20s for SC code
+		SLEEPTIME=20s
+
 	elif [[ "${CURDIR}" == "ccl" ]]; then
 
 		# Exit 3 Command
@@ -372,6 +352,12 @@ function autoDeploy() {
 
 		# Grep command for the CHECKSUM
 		VALIDATIONCOMMAND+=( "grep -i ${CHECKSUM} /home/ccl/ccl/CCLlog.dat" )
+
+		# Set validation user incase there are file permission issues
+		VALIDATIONUSER="-c"
+
+		# Set the sleeptime to 5s for CCL code
+		SLEEPTIME=5s
 
 	fi
 
@@ -382,12 +368,28 @@ function autoDeploy() {
 	auto "${SITECONIP}" -s --cmd EXIT3COMMAND
 
 	# Sleep for 10s to give the code a chance to load
-	sleep 10s
+	sleep "${SLEEPTIME}"
 
 	# Run the validation command using auto
-	auto "${SITECONIP}" -s --cmd VALIDATIONCOMMAND
+	RESULT=$(auto "${SITECONIP}" "${VALIDATIONUSER}" --cmd VALIDATIONCOMMAND)
 
 	# Now we should make sure that the Validation was successful and notify the user.
+	if [[ -n $(echo "${RESULT}" | grep ${CHECKSUM}) ]]; then
+
+		# Notify the user that the code was loaded successfully
+		echo "The code with checksum (${CHECKSUM}) is loaded on sitecontroller ${SITECONIP}."
+
+	else
+
+		# Notify the user that the code may not be loaded
+		echo "Unable to verify that the code with checksum (${CHECKSUM}) was loaded!"
+
+		# Return with error
+		return 255
+
+	fi
+
+	return 0
 
 }
 
@@ -412,6 +414,36 @@ cd "/mnt/c"
 wsl.exe -d sled11 cd ${CODEDIR} \&\& sled11Build.sh
 
 cd "${CODEDIR}"
+
+# Look for the file "../wslBuild.dat"
+if [[ -f "${BUILDFILE}" ]]; then
+
+	# If the file did not contain an md5
+	if [[ -z $(grep "MD5(" "${BUILDFILE}") ]]; then
+
+		echo "wslBuild.sh: Build failed - No MD5 found!"
+		exit 255
+
+	fi
+
+	# We should have a valid MD5 to use
+	MD5=$(grep "^MD5(" "${BUILDFILE}")
+	
+	# Split the MD5 line at " " and return the data after the " "
+	# This checksum is used in the auto deploy routine
+	CHECKSUM=$(echo "${MD5}" | cut -d ' ' -f2- )
+	echo "CHECKSUM: ${CHECKSUM}"
+	
+	# This value is used in the backup routine
+	MD5=${MD5: -4}
+
+else
+
+	# There was no wslBuild.dat
+	echo "wslBuild.sh: ${BUILDFILE} not found!"
+	exit 255
+
+fi
 
 # Perform a DIFF into wslDiff.dat if the user wishes to
 if [[ "${NODIFF}" != 1 ]]; then

@@ -174,6 +174,12 @@ function auto() {
 				shift # Past value
 				;;
 
+			# Debug
+			--debug)
+				DEBUG=1
+				shift # Past argument
+				;;
+
 			# IP Catch
 			--ip)
 				IP="${2}"
@@ -231,7 +237,7 @@ function auto() {
 	if [[ -n "${NEWTAB}" ]]; then FSEP=" &&"; fi
 
 	# echo suppression for unittesting
-	if [[ -z "${UNITTEST}" ]]; then
+	if [[ -z "${UNITTEST}" && -n "${DEBUG}" ]]; then
 		# Logging
 		if [[ -n "${IP}" ]]; then        echo "IP        = ${IP}"; fi
 		if [[ -n "${USER}" ]]; then      echo "USER      = ${USER}"; fi
@@ -244,7 +250,6 @@ function auto() {
 		if [[ -n "${STORE}" ]]; then     echo "STORE     = ${STORE}"; fi
 		if [[ -n "${REG}" ]]; then       echo "REGISTER  = ${REG}"; fi
 		if [[ -n "${TITLE}" ]]; then     echo "TITLE     = ${TITLE}"; fi
-		if [[ -n "${IP}" ]]; then        echo "IP        = ${IP}"; fi
 	fi
 
 	# Validate inputs
