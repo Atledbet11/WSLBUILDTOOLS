@@ -63,3 +63,26 @@ wsl -l -v
 
 **Now lets setup openSUSE-Leap-15.6**
 
+Open powershell
+
+Install openSUSE-Leap-15.6
+```
+wsl install -d openSUSE-Leap-15.6
+```
+>Note: By default this will be installed in a weird spot
+>      We will now move it to be in C:\wslDistroStorage\openSUSE-Leap-15.6
+
+Moving install location
+```
+wsl --shutdown
+```
+
+```
+wsl --manage openSUSE-Leap-15.6 --move C:\wslDistroStorage\openSUSE-Leap-15.6
+```
+
+Restart the distro.
+```
+wsl -d openSUSE-Leap-15.6
+```
+
