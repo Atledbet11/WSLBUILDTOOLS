@@ -30,7 +30,7 @@ We will need two distrobutions of linux installed
 - First we need SLED11, as this is where the code has to be built
 - Next you can install any Linux distro of your choice, I use openSUSE-Leap-15.6
 
-**Lets start with SLED11**
+# Lets start with SLED11
 
 First you need to download [SLED11](https://capstonelogistics-my.sharepoint.com/:u:/p/anthony_ledbetter/EdlROLDEiVVLkZPwJya-nFkBpigy3NB6ex3GxMbHBkT_Mg?e=y33KJd)
 >Note: Make note of where that gets downloaded.
@@ -61,7 +61,7 @@ wsl -l -v
 ```
 >Note: you should see sled11 on this list.
 
-**Now lets setup openSUSE-Leap-15.6**
+# Now lets setup openSUSE-Leap-15.6
 
 Open powershell
 
@@ -91,7 +91,7 @@ Restart the distro
 wsl -d openSUSE-Leap-15.6
 ```
 
-**Clone the Repository**
+# Clone the Repository
 
 Using your openSUSE-Leap-15.6 terminal
 
