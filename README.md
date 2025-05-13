@@ -81,8 +81,82 @@ wsl --shutdown
 wsl --manage openSUSE-Leap-15.6 --move C:\wslDistroStorage\openSUSE-Leap-15.6
 ```
 
-Restart the distro.
+Set default distro
+```
+wsl --setdefault openSUSE-Leap-15.6
+```
+
+Restart the distro
 ```
 wsl -d openSUSE-Leap-15.6
 ```
 
+**Clone the Repository**
+
+Using your openSUSE-Leap-15.6 terminal
+
+```
+cd /mnt/c/wslDistroStorage/
+git clone git@github.com:Atledbet11/WSLBUILDTOOLS.git shared
+```
+>Note: It is important that the scripts are installed into "/mnt/c/wslDistroStorage/shared/scripts"
+>      This is because the .bashrc files will add this directory to the shell path variable.
+
+# Sled11 setup
+
+Open a new sled11 terminal using windows terminal
+>Note: If you arent on windows terminal you can use "wsl -d sled11" to open it from CMD
+
+**Copy over your sled11 .bashrc**
+
+```
+cd $HOME
+cp /mnt/c/wslDistroStorage/shared/files/sled11Files/.bashrc ./.bashrc
+```
+
+**Close and restart the sled11 terminal so the new .bashrc is loaded**
+
+Verify the .bashrc is loaded
+```
+echo $WSLROOT
+```
+>Note: Should display "/mnt/c/wslDistroStorage/shared/"
+
+# openSUSE-Leap-15.6 setup
+
+open a new openSUSE-Leap-15.6 terminal using windows terminal
+>Note: If you arent on windows terminal you can use "wsl -d openSUSE-Leap-15.6" to open it from CMD
+
+**Copy over your openSUSE-Leap-15.6 .bashrc**
+
+```
+cd $HOME
+cp /mnt/c/wslDistroStorage/shared/files/distroFiles/.bashrc
+```
+
+**Close and restart the openSUSE-Leap-15.6 terminal so the new .bashrc is loaded**
+
+Verify the .bashrc is loaded
+```
+echo $WSLROOT
+```
+>Note: Should display "/mnt/c/wslDistroStorage/shared/"
+
+**EDIT your CVSROOT**
+
+```
+cd $HOME
+nano .bashrc
+```
+
+edit the line containing "export CVSROOT=" to have your username instead of mine.
+
+# Make sure that the buildbox is initialized
+
+From the openSUSE-Leap-15.6 terminal
+```
+cd $CODEROOT
+```
+>Note: This should put you in the directory "/mnt/wsl/instances/sled11/code"
+>      If you are not taken there, then there is an issue with your setup.
+>      Try rebooting the host machine and opening a fresh openSUSE Terminal.
