@@ -72,6 +72,12 @@ wsl install -d openSUSE-Leap-15.6
 >Note: By default this will be installed in a weird spot
 >      We will now move it to be in C:\wslDistroStorage\openSUSE-Leap-15.6
 
+Verify that openSUSE-Leap-15.6 is installed
+```
+wsl -l -v
+```
+>Note: you should see openSUSE-Leap-15.6 on this list.
+
 Moving install location
 ```
 wsl --shutdown
