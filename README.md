@@ -166,3 +166,7 @@ cd $CODEROOT
 >Note: This should put you in the directory "/mnt/wsl/instances/sled11/code"
 >      If you are not taken there, then there is an issue with your setup.
 >      Try rebooting the host machine and opening a fresh openSUSE Terminal.
+
+Upon rebooting you should see the following after launching the openSUSE Terminal.
+
+"Initializing sled11 mount"
