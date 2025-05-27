@@ -992,7 +992,7 @@ function fileEditor() {
 
 		esac
 
-		sleep 1s
+		sleep 0.5
 
 	done
 

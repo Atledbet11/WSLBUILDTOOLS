@@ -255,7 +255,17 @@ function auto() {
 	# Validate inputs
 	userInputValidation -u "$IP" -ip >/dev/null
 	RET="${?}"
-	if [[ "${RET}" == 255 ]]; then echo "$IP Is not a valid IP!"; return 255; fi
+	if [[ "${RET}" == 255 ]]; then
+		# The ip supplied was not valid, try to convert it using convertIP.sh
+		echo "$IP Is not valid, attempting conversion"
+		IP=$(convertIP.sh "$IP");
+		userInputValidation -u "$IP" -ip >/dev/null
+		RET="${?}"
+		if [[ "${RET}" == 255 ]]; then
+			echo "$IP Is not a valid IP!";
+			return 255;
+		fi
+	fi
 
 	userInputValidation -u "$MODE" -o VALMODE
 	RET="${?}"

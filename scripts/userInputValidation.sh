@@ -91,30 +91,30 @@ function userInputValidation() {
 			# NUMBER
 			-n|--number)
 				local NUMBER=1
-	                        exclusivity
+				exclusivity
 				shift # Past argument
 				;;
 
 			# ALPHA
 			-a|--alpha)
 				local ALPHA=1
-	                        exclusivity
+				exclusivity
 				shift # Past argument
-	                        ;;
+				;;
 
 			# ALPHANUMERIC
 			-an|--alphanum)
 				local ALPHANUMERIC=1
 				exclusivity
 				shift # Past argument
-        	                ;;
+				;;
 
 			# IP
 			-ip|--ip)
 				local IP=1
-	                        exclusivity
+				exclusivity
 				shift # Past argument
-	                        ;;
+				;;
 
 			# CHMOD
 			--chmod)
