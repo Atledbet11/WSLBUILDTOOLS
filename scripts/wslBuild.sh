@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Adding colors for success/fail conditions on the build process.
+RED='\033[1;31m'
+BLUE='\033[1;34m'
+YELL='\033[1;33m'
+NC='\033[0m'
+
 # I am re-writing this script to address issues with "local -n" in older bash releases
 #  -n is not recognized as a valid option for local variable declarations
 #  And thus fileTools.sh and userInterface.sh will not work on sled11 buildbox
@@ -64,7 +70,7 @@ while [[ "${#}" -gt 0 ]]; do
 
 		# Error Handling
 		*)
-			echo "wslBuild.sh: Invalid Parameter ${1}!"
+			echo -e "${RED}wslBuild.sh: Invalid Parameter ${1}!${NC}"
 			shift # Past argument
 			exit 255
 			;;
@@ -125,7 +131,7 @@ CURDIR=${CURDIR:-/}
 if ! [[ "${CURDIR}" == "server" || "${CURDIR}" == "ccl" ]]; then
 
 	# The directory was not server or ccl
-	echo "Current Directory: ${CURDIR} was invalid."
+	echo -e "${RED}Current Directory: ${CURDIR} was invalid.${NC}"
 	exit 255
 
 fi
@@ -287,7 +293,7 @@ function autoDeploy() {
 	if ! [[ -f "${COMMANDFILE}" ]]; then
 
 		# Tell the user the file did not exist
-		echo "wslBuild.sh: The file ${COMMANDFILE} does not exist!"
+		echo -e "${RED}wslBuild.sh: The file ${COMMANDFILE} does not exist!${NC}"
 
 		# Return with error
 		return 255
@@ -300,7 +306,7 @@ function autoDeploy() {
 	if [[ -z "${RESULT}" ]]; then
 
 		# Tell the user to provide a SITECON_IP
-		echo "wslBuild.sh: SITECON_IP missing from ${COMMANDFILE}"
+		echo -e "${RED}wslBuild.sh: SITECON_IP missing from ${COMMANDFILE}${NC}"
 
 		# Return with error
 		return 255
@@ -323,7 +329,7 @@ function autoDeploy() {
 	if [[ "${RET}" != 0 ]]; then
 
 		# Tell the user the IP is invalid
-		echo "IP: ${SITECONIP} was invalid!"
+		echo -e "${RED}IP: ${SITECONIP} was invalid!${NC}"
 
 		# Return with error
 		return 255
@@ -385,12 +391,12 @@ function autoDeploy() {
 	if [[ -n $(echo "${RESULT}" | grep ${CHECKSUM}) ]]; then
 
 		# Notify the user that the code was loaded successfully
-		echo "The code with checksum (${CHECKSUM}) is loaded on sitecontroller ${SITECONIP}."
+		echo -e "${BLUE}The code with checksum (${CHECKSUM}) is loaded on sitecontroller ${SITECONIP}.${NC}"
 
 	else
 
 		# Notify the user that the code may not be loaded
-		echo "Unable to verify that the code with checksum (${CHECKSUM}) was loaded!"
+		echo -e "${YELL}Unable to verify that the code with checksum (${CHECKSUM}) was loaded!${NC}"
 
 		# Return with error
 		return 255
@@ -440,7 +446,7 @@ if [[ -f "${BUILDFILE}" ]]; then
 	# If the file did not contain an md5
 	if [[ -z $(grep "MD5(" "${BUILDFILE}") ]]; then
 
-		echo "wslBuild.sh: Build failed - No MD5 found!"
+		echo -e "${RED}wslBuild.sh: Build failed - No MD5 found!${NC}"
 		exit 255
 
 	fi
@@ -459,7 +465,7 @@ if [[ -f "${BUILDFILE}" ]]; then
 else
 
 	# There was no wslBuild.dat
-	echo "wslBuild.sh: ${BUILDFILE} not found!"
+	echo -e "${YELL}wslBuild.sh: ${BUILDFILE} not found!${NC}"
 	exit 255
 
 fi

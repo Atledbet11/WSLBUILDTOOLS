@@ -3,7 +3,7 @@
 # Only runs if the script is being directly executed.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 
-        echo "Script is being directly executed!"
+	echo "Script is being directly executed!"
 	echo "Source this script using 'source userInputValidation.sh'"
 	exit 255
 
@@ -235,17 +235,17 @@ function userInputValidation() {
 		# Returns 0 for pass, 255 for fail
 		if [[ "${USERINPUT}" =~ ^[+-]?[0-9]+([.][0-9]*)?$ ]]; then
 
-	                # A valid Number
-	                debug "${USERINPUT} is valid."
-	                return 0
+				# A valid Number
+				debug "${USERINPUT} is valid."
+				return 0
 
-	        else
+		else
 
-	                # Not a valid Number
-	                debug "${USERINPUT} is not a valid Number!"
-	                return 255
+				# Not a valid Number
+				debug "${USERINPUT} is not a valid Number!"
+				return 255
 
-	        fi
+		fi
 
 	fi
 
@@ -253,19 +253,19 @@ function userInputValidation() {
 
 		# Alhpa handling
 		# Returns 0 for pass, 255 for fail
-	        if [[ "${USERINPUT}" =~ ^[a-zA-Z]+$ ]]; then
+		if [[ "${USERINPUT}" =~ ^[a-zA-Z]+$ ]]; then
 
-	                # A valid Alpha String
-	                debug "${USERINPUT} is valid."
-	                return 0
+				# A valid Alpha String
+				debug "${USERINPUT} is valid."
+				return 0
 
-	        else
+		else
 
-	                # Not a valid Alpha String
-	                echo "${USERINPUT} is not a valid Alpha String!"
-	                return 255
+				# Not a valid Alpha String
+				echo "${USERINPUT} is not a valid Alpha String!"
+				return 255
 
-	        fi
+		fi
 
 	fi
 
@@ -273,19 +273,19 @@ function userInputValidation() {
 
 		# Alphanumeric handling
 		# Returns 0 for pass, 255 for fail
-	        if [[ "${USERINPUT}" =~ ^[a-zA-Z0-9]+$ ]]; then
+		if [[ "${USERINPUT}" =~ ^[a-zA-Z0-9]+$ ]]; then
 
-	                # A valid Alphanumeric String
-			debug "${USERINPUT} is valid."
-	                return 0
+				# A valid Alphanumeric String
+		debug "${USERINPUT} is valid."
+				return 0
 
-	        else
+		else
 
-	                # Not a valid Alphanumeric String
-	                echo "${USERINPUT} is not a valid Alphanumeric String!"
-	                return 255
+				# Not a valid Alphanumeric String
+				echo "${USERINPUT} is not a valid Alphanumeric String!"
+				return 255
 
-	        fi
+		fi
 
 	fi
 
