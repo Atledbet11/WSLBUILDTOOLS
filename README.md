@@ -137,7 +137,7 @@ open a new openSUSE-Leap-15.6 terminal using windows terminal
 
 ```
 cd $HOME
-cp /mnt/c/wslDistroStorage/shared/files/distroFiles/.bashrc
+cp /mnt/c/wslDistroStorage/shared/files/distroFiles/.bashrc ./.bashrc
 ```
 
 **Close and restart the openSUSE-Leap-15.6 terminal so the new .bashrc is loaded**
