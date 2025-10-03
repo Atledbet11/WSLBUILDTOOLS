@@ -50,7 +50,12 @@ function newSetup() {
 	if [[ "${RET}" -ne 0 ]]; then
 		echo "Invalid SetupName!"
 		echo "Alphanumeric characters only!"
+		return 255
 	fi
+
+	FILENAME="../setup_${SETUPNAME}.dat"
+
+	touch "${FILENAME}"
 
 }
 
@@ -60,6 +65,8 @@ function editSetup() {
 
 function deleteSetup() {
 	echo "Delete Setup"
+
+	echo "${1}"
 }
 
 function renameSetup() {

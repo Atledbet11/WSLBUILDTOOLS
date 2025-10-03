@@ -36,7 +36,6 @@ export CVS_RSH="ssh"
 # Initialize SLED11 distro and mount / to /mnt/wsl/instances/sled11/
 if [ ! -d $CODEROOT ]; then
 	cd /mnt/c
-	wsl.exe -d sled11 sled11init.sh
+	wsl.exe -d sled11 $WSLROOT/scripts/sled11init.sh
 	cd
 fi
-

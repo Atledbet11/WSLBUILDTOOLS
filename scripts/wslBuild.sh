@@ -168,12 +168,14 @@ function backup() {
 
 	# If we are in the server directory
 	if [[ "${CURDIR}" == "server" ]]; then
+	#if ! [[ "${CURDIR}" =~ ^(server) ]]; then
 
 		# Set the code variable to "NewServer3.tgz"
 		CODE="NewServer3.tgz"
 
 	# If we are in the ccl directory
 	elif [[ "${CURDIR}" == "ccl" ]]; then
+	#elif ! [[ "${CURDIR}" =~ ^(ccl) ]]; then
 
 		# Set the code variable to "NewCCL.tgz"
 		CODE="NewCCL.tgz"
@@ -181,13 +183,13 @@ function backup() {
 	fi
 
 	# Save a copy of the tgz in the backup dir
-	scp "${CODE}" "${BACKDIR}"
+	scp -p "${CODE}" "${BACKDIR}"
 
 	# If wslBuildCommands.dat exists
 	if [[ -f "${COMMANDFILE}" ]]; then
 
 		# Save a copy of it too
-		scp "${COMMANDFILE}" "${BACKDIR}"
+		scp -p "${COMMANDFILE}" "${BACKDIR}"
 
 	fi
 
@@ -195,12 +197,12 @@ function backup() {
 	if [[ -f "${DIFFFILE}" ]]; then
 
 		# Save a copy of it too
-		scp "${DIFFFILE}" "${BACKDIR}"
+		scp -p "${DIFFFILE}" "${BACKDIR}"
 
 	fi
 
 	# Save a copy of wslBuild.dat
-	scp "${BUILDFILE}" "${BACKDIR}"
+	scp -p "${BUILDFILE}" "${BACKDIR}"
 
 	debug "Backup made at ${BACKDIR}"
 
@@ -213,7 +215,7 @@ function backup() {
 			debug "Backing up file ${FILE}"
 
 			# Backup the file that had differences
-			scp "${FILE}" "${BACKDIR}"
+			scp -p "${FILE}" "${BACKDIR}"
 
 		done
 
@@ -429,12 +431,12 @@ cd "/mnt/c"
 if [[ -n "${NOOPT}" ]]; then
 
 	# Build with noopt enabled
-	wsl.exe -d sled11 cd ${CODEDIR} \&\& sled11Build.sh --noopt
+	wsl.exe -d sled11 cd ${CODEDIR} \&\& $WSLROOT/scripts/sled11Build.sh --noopt
 
 else 
 
 	# Build with ../wslBuildCommands.dat enabled
-	wsl.exe -d sled11 cd ${CODEDIR} \&\& sled11Build.sh
+	wsl.exe -d sled11 cd ${CODEDIR} \&\& $WSLROOT/scripts/sled11Build.sh
 
 fi
 
